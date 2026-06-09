@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# Database
+backend/data/
+
+# Node
+node_modules/
+frontend/dist/
+
+# MkDocs build output
+site/
+
+# OS
+.DS_Store
+Thumbs.db
