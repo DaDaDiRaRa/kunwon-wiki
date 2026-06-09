@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import SearchBar from '../components/SearchBar'
 import ArticleCard from '../components/ArticleCard'
 import client from '../api/client'
@@ -17,17 +17,28 @@ function SkeletonCard() {
   )
 }
 
-function HomePage() {
-  const [articles, setArticles]     = useState([])
-  const [categories, setCategories] = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [search, setSearch]         = useState('')
-  const [searchParams, setSearchParams] = useSearchParams()
+// 상대 시간 표시 ("방금 전", "N분 전", ...)
+function timeAgo(dateStr) {
+  const date = new Date(dateStr + 'Z')
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (seconds < 60)   return '방금 전'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}분 전`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}시간 전`
+  return `${Math.floor(seconds / 86400)}일 전`
+}
 
-  // URL ?tag= 파라미터로 태그 필터 상태 관리
+function HomePage() {
+  const [articles, setArticles]       = useState([])
+  const [categories, setCategories]   = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [search, setSearch]           = useState('')
+  const [activities, setActivities]   = useState([])
+  const [activitiesOpen, setActivitiesOpen] = useState(true)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+
   const tagFilter = searchParams.get('tag') || ''
 
-  // 카테고리 맵 (id → name) — ArticleCard에 이름 표시용
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
 
   useEffect(() => {
@@ -35,6 +46,14 @@ function HomePage() {
       .get('/api/categories')
       .then((res) => setCategories(res.data))
       .catch((err) => console.error('카테고리 로딩 실패:', err))
+  }, [])
+
+  // 최근 활동 피드 로딩 (마운트 시 1회)
+  useEffect(() => {
+    client
+      .get('/api/activities')
+      .then((res) => setActivities(res.data.slice(0, 10)))
+      .catch((err) => console.error('활동 피드 로딩 실패:', err))
   }, [])
 
   // 글 목록 로딩 — 검색어·태그 필터 변경 시마다
@@ -51,8 +70,6 @@ function HomePage() {
   }, [search, tagFilter])
 
   const handleSearch = useCallback((keyword) => setSearch(keyword), [])
-
-  // 태그 필터 해제 — URL에서 tag 파라미터 제거
   const clearTagFilter = () => setSearchParams({})
 
   return (
@@ -76,9 +93,68 @@ function HomePage() {
       )}
 
       {/* 검색바 */}
-      <div className="max-w-2xl mb-8">
+      <div className="max-w-2xl mb-6">
         <SearchBar onSearch={handleSearch} />
       </div>
+
+      {/* 최근 활동 피드 */}
+      {activities.length > 0 && (
+        <div className="max-w-2xl mb-8">
+          {/* 섹션 헤더 */}
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-widest">
+              최근 활동
+            </h2>
+            <button
+              onClick={() => setActivitiesOpen((prev) => !prev)}
+              className="text-xs text-text-secondary hover:text-text-primary transition-colors"
+            >
+              {activitiesOpen ? '접기 ▲' : '펼치기 ▼'}
+            </button>
+          </div>
+
+          {activitiesOpen && (
+            <div className="bg-bg-card border border-border-subtle rounded-xl overflow-hidden divide-y divide-border-subtle">
+              {activities.map((activity, idx) => (
+                <div
+                  key={`${activity.id}-${idx}`}
+                  onClick={() => navigate(`/article/${activity.id}`)}
+                  className="px-4 py-2.5 flex items-start gap-2 cursor-pointer
+                    hover:bg-bg-hover transition-colors group"
+                >
+                  {/* action 배지 */}
+                  <span
+                    className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium mt-0.5
+                      ${activity.action === '작성'
+                        ? 'bg-green-500/15 text-green-400'
+                        : 'bg-blue-500/15 text-blue-400'
+                      }`}
+                  >
+                    {activity.action}
+                  </span>
+
+                  {/* 본문 */}
+                  <p className="flex-1 text-xs text-text-secondary leading-relaxed min-w-0">
+                    <span className="text-text-primary font-medium">
+                      {activity.author_name}
+                    </span>
+                    님이{' '}
+                    <span className="text-accent group-hover:underline truncate">
+                      {activity.title}
+                    </span>
+                    을(를) {activity.action}했습니다
+                  </p>
+
+                  {/* 시간 */}
+                  <span className="flex-shrink-0 text-[10px] text-text-secondary mt-0.5">
+                    {timeAgo(activity.updated_at)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 글 목록 */}
       {loading ? (

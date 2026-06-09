@@ -8,13 +8,14 @@ function stripEmoji(name) {
   return idx !== -1 ? name.slice(idx + 1) : name
 }
 
-function Sidebar() {
-  const [categories, setCategories] = useState([])
-  const [popularTags, setPopularTags] = useState([])
+function Sidebar({ nickname, onNicknameChange }) {
+  const [categories, setCategories]       = useState([])
+  const [popularTags, setPopularTags]     = useState([])
+  const [editingNickname, setEditingNickname] = useState(false)
+  const [nicknameInput, setNicknameInput] = useState('')
   const navigate = useNavigate()
   const location = useLocation()
 
-  // 카테고리 목록 로딩
   useEffect(() => {
     client
       .get('/api/categories')
@@ -22,7 +23,6 @@ function Sidebar() {
       .catch((err) => console.error('카테고리 로딩 실패:', err))
   }, [])
 
-  // 인기 태그 상위 10개 로딩
   useEffect(() => {
     client
       .get('/api/tags')
@@ -30,13 +30,19 @@ function Sidebar() {
       .catch((err) => console.error('태그 로딩 실패:', err))
   }, [])
 
-  // 현재 선택된 카테고리 id 추출
   const currentCategoryId = location.pathname.startsWith('/category/')
     ? parseInt(location.pathname.split('/')[2])
     : null
 
-  // 현재 활성화된 태그 필터 추출
   const activeTag = new URLSearchParams(location.search).get('tag')
+
+  const handleConfirmNickname = () => {
+    const name = nicknameInput.trim()
+    if (!name) { alert('이름을 입력해주세요.'); return }
+    onNicknameChange(name)
+    setEditingNickname(false)
+    setNicknameInput('')
+  }
 
   return (
     <aside className="w-60 min-h-screen bg-bg-card border-r border-border-subtle flex flex-col fixed left-0 top-0 z-10">
@@ -68,14 +74,10 @@ function Sidebar() {
                     : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary border-l-2 border-transparent pl-3.5'
                 }`}
             >
-              {/* 아이콘 + 이름 */}
               <span className="flex items-center gap-2 min-w-0">
-                <span className="flex-shrink-0 text-base leading-none">
-                  {cat.icon}
-                </span>
+                <span className="flex-shrink-0 text-base leading-none">{cat.icon}</span>
                 <span className="truncate">{stripEmoji(cat.name)}</span>
               </span>
-              {/* 글 수 뱃지 */}
               <span
                 className={`flex-shrink-0 text-xs px-1.5 py-0.5 rounded-full ml-1
                   ${isActive ? 'bg-accent text-white' : 'bg-bg-base text-text-secondary'}`}
@@ -86,7 +88,7 @@ function Sidebar() {
           )
         })}
 
-        {/* 인기 태그 섹션 — 태그가 하나 이상 있을 때만 표시 */}
+        {/* 인기 태그 섹션 */}
         {popularTags.length > 0 && (
           <>
             <p className="px-4 pt-4 pb-2 text-xs text-text-secondary uppercase tracking-widest">
@@ -114,6 +116,47 @@ function Sidebar() {
           </>
         )}
       </nav>
+
+      {/* 닉네임 표시 영역 */}
+      <div className="px-4 py-3 border-t border-border-subtle">
+        {editingNickname ? (
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              value={nicknameInput}
+              onChange={(e) => setNicknameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleConfirmNickname()
+                if (e.key === 'Escape') setEditingNickname(false)
+              }}
+              placeholder="새 닉네임"
+              maxLength={20}
+              autoFocus
+              className="flex-1 min-w-0 bg-bg-base border border-border-subtle text-text-primary
+                text-xs px-2 py-1.5 rounded-lg outline-none focus:border-accent transition-colors"
+            />
+            <button
+              onClick={handleConfirmNickname}
+              className="px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs
+                rounded-lg transition-colors flex-shrink-0"
+            >
+              확인
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-text-secondary truncate">
+              ✍️ {nickname || '익명'}
+            </span>
+            <button
+              onClick={() => { setEditingNickname(true); setNicknameInput(nickname) }}
+              className="text-xs text-text-secondary hover:text-accent transition-colors ml-2 flex-shrink-0"
+            >
+              변경
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* 새 글 작성 버튼 (하단 고정) */}
       <div className="p-4 border-t border-border-subtle">

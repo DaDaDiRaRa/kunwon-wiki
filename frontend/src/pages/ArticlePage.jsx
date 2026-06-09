@@ -13,14 +13,60 @@ function formatDate(dateStr) {
   })
 }
 
+// 이미지 클릭 시 라이트박스로 열기 위한 커스텀 렌더러
+function MarkdownImage({ src, alt, onOpen }) {
+  return (
+    <img
+      src={src}
+      alt={alt || ''}
+      className="max-w-full h-auto rounded-lg my-2 cursor-zoom-in hover:opacity-90 transition-opacity"
+      onClick={() => onOpen(src)}
+    />
+  )
+}
+
+// 어두운 배경 + 원본 크기 이미지 표시 — 배경 또는 × 클릭으로 닫기
+function Lightbox({ src, onClose }) {
+  // ESC 키로 닫기
+  useEffect(() => {
+    const handleKeyDown = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      {/* 이미지 클릭은 닫기 방지 */}
+      <img
+        src={src}
+        alt="원본 이미지"
+        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+      <button
+        className="absolute top-4 right-5 text-white text-4xl leading-none
+          hover:text-gray-300 transition-colors"
+        onClick={onClose}
+        aria-label="닫기"
+      >
+        ×
+      </button>
+    </div>
+  )
+}
+
 function ArticlePage() {
   const { id }     = useParams()
   const navigate   = useNavigate()
-  const [article, setArticle]           = useState(null)
-  const [category, setCategory]         = useState(null)
-  const [loading, setLoading]           = useState(true)
-  const [deleteConfirm, setDeleteConfirm] = useState(false)
-  const [deleting, setDeleting]         = useState(false)
+  const [article, setArticle]               = useState(null)
+  const [category, setCategory]             = useState(null)
+  const [loading, setLoading]               = useState(true)
+  const [deleteConfirm, setDeleteConfirm]   = useState(false)
+  const [deleting, setDeleting]             = useState(false)
+  const [lightboxSrc, setLightboxSrc]       = useState(null)  // null = 닫힘
 
   useEffect(() => {
     setLoading(true)
@@ -28,7 +74,6 @@ function ArticlePage() {
       .get(`/api/articles/${id}`)
       .then((res) => {
         setArticle(res.data)
-        // 카테고리 이름 조회
         return client.get('/api/categories').then((catRes) => {
           const found = catRes.data.find((c) => c.id === res.data.category_id)
           setCategory(found || null)
@@ -106,8 +151,9 @@ function ArticlePage() {
             {category.name}
           </span>
         )}
-        <span>작성: {formatDate(article.created_at)}</span>
-        <span>수정: {formatDate(article.updated_at)}</span>
+        <span>✍️ {article.author_name || '익명'}</span>
+        <span>📅 {formatDate(article.created_at)}</span>
+        <span>🔄 {formatDate(article.updated_at)}</span>
         <span>👁 {article.view_count}</span>
       </div>
 
@@ -127,7 +173,7 @@ function ArticlePage() {
         </div>
       )}
 
-      {/* 인라인 삭제 확인 UI (모달 아님) */}
+      {/* 인라인 삭제 확인 UI */}
       {deleteConfirm && (
         <div className="mb-6 p-4 bg-bg-card border border-red-400/30 rounded-xl flex items-center justify-between gap-4">
           <span className="text-text-primary text-sm">정말 삭제하시겠습니까?</span>
@@ -155,7 +201,7 @@ function ArticlePage() {
       {/* 구분선 */}
       <hr className="border-border-subtle mb-8" />
 
-      {/* 마크다운 렌더링 (react-markdown + remark-gfm) */}
+      {/* 마크다운 렌더링 — 이미지 클릭 시 라이트박스 오픈 */}
       <div className="
         prose prose-invert max-w-none
         prose-headings:text-text-primary prose-headings:font-bold
@@ -171,10 +217,28 @@ function ArticlePage() {
         prose-li:text-text-primary
         prose-ul:text-text-primary prose-ol:text-text-primary
       ">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            img({ src, alt }) {
+              return (
+                <MarkdownImage
+                  src={src}
+                  alt={alt}
+                  onOpen={setLightboxSrc}
+                />
+              )
+            },
+          }}
+        >
           {article.content}
         </ReactMarkdown>
       </div>
+
+      {/* 라이트박스 */}
+      {lightboxSrc && (
+        <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+      )}
     </div>
   )
 }

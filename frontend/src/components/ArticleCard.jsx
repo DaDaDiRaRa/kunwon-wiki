@@ -40,6 +40,11 @@ function ArticleCard({ article, categoryName }) {
           <span>👁</span>
           <span>{article.view_count}</span>
         </span>
+        {/* 작성자 */}
+        <span className="flex items-center gap-0.5 ml-auto">
+          <span>✍️</span>
+          <span>{article.author_name || '익명'}</span>
+        </span>
       </div>
     </div>
   )

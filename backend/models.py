@@ -50,5 +50,7 @@ class Article(Base):
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
     view_count = Column(Integer, default=0)
 
+    author_name  = Column(Text, default="익명", server_default="익명")
+
     category     = relationship("Category",   back_populates="articles")
     article_tags = relationship("ArticleTag", back_populates="article", cascade="all, delete-orphan")

@@ -1,15 +1,21 @@
 import os
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 from database import Base, engine, check_db_connection
 from models import Category, Tag, ArticleTag  # noqa: F401 — 테이블 등록용 import
 from models import Article                    # noqa: F401
-from routers import categories, articles, tags
+from routers import categories, articles, tags, uploads, activities
 from schemas import HealthResponse
 
 load_dotenv()
+
+# StaticFiles 마운트 전에 디렉토리가 존재해야 함
+UPLOADS_DIR = Path("./data/uploads")
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── 앱 초기화 ──────────────────────────────────────────────
 app = FastAPI(
@@ -28,18 +34,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── 업로드 이미지 정적 서빙 ────────────────────────────────────
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+
 # ── 라우터 등록 ────────────────────────────────────────────
 app.include_router(categories.router)
 app.include_router(articles.router)
 app.include_router(tags.router)
+app.include_router(uploads.router)
+app.include_router(activities.router)
 
 
 # ── 시작 이벤트 ────────────────────────────────────────────
 @app.on_event("startup")
 def on_startup():
-    """DB 테이블 생성 + 초기 카테고리 시드"""
+    """DB 테이블 생성 + 마이그레이션 + 초기 카테고리 시드"""
     Base.metadata.create_all(bind=engine)
+    _migrate_add_author_name()
     _seed_categories()
+
+
+def _migrate_add_author_name():
+    """author_name 컬럼이 없는 기존 DB에 컬럼 추가"""
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE articles ADD COLUMN author_name TEXT DEFAULT '익명'"))
+            conn.commit()
+    except Exception:
+        pass  # 컬럼이 이미 존재하면 무시
 
 
 def _seed_categories():

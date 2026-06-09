@@ -1,7 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import MDEditor from '@uiw/react-md-editor'
 import client from '../api/client'
+
+// 이미지 업로드 툴바 버튼 아이콘
+function ImageUploadIcon({ uploading }) {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+      {uploading ? (
+        // 업로드 중 — 스피너 대신 점 세 개로 표현
+        <text x="1" y="12" fontSize="10" fill="currentColor">···</text>
+      ) : (
+        <>
+          <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+          <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
+        </>
+      )}
+    </svg>
+  )
+}
 
 function ArticleEditPage() {
   const { id }   = useParams()
@@ -12,10 +29,13 @@ function ArticleEditPage() {
   const [content, setContent]       = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [categories, setCategories] = useState([])
-  const [tags, setTags]             = useState([])      // 확정된 태그 목록
-  const [tagInput, setTagInput]     = useState('')      // 입력 중인 태그 텍스트
+  const [tags, setTags]             = useState([])
+  const [tagInput, setTagInput]     = useState('')
   const [saving, setSaving]         = useState(false)
   const [loading, setLoading]       = useState(!isNew)
+  const [uploading, setUploading]   = useState(false)
+
+  const fileInputRef = useRef(null)
 
   // 카테고리 목록 로딩
   useEffect(() => {
@@ -47,7 +67,76 @@ function ArticleEditPage() {
     }
   }, [id, isNew])
 
-  // 태그 추가 (소문자 정규화 + 중복 제거)
+  // ── 이미지 업로드 ──────────────────────────────────────────
+
+  const handleImageFile = async (file) => {
+    if (!file || uploading) return
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.')
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    setUploading(true)
+    try {
+      const res = await client.post('/api/uploads/image', formData)
+      const { url } = res.data
+      // 확장자 제거한 파일명을 alt 텍스트로 사용
+      const altText = file.name.replace(/\.[^.]+$/, '')
+      // 커서 위치 무관하게 본문 끝에 이미지 삽입
+      setContent((prev) => {
+        const separator = prev && !prev.endsWith('\n\n') ? '\n\n' : ''
+        return `${prev}${separator}![${altText}](${url})\n`
+      })
+    } catch (err) {
+      alert(`이미지 업로드 실패: ${err.message}`)
+    } finally {
+      setUploading(false)
+      // 같은 파일 재선택 가능하도록 input 초기화
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  // 파일 input onChange
+  const handleFileInputChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) handleImageFile(file)
+  }
+
+  // 에디터 영역 드래그앤드롭
+  const handleEditorDrop = (e) => {
+    const files = Array.from(e.dataTransfer.files).filter((f) =>
+      f.type.startsWith('image/')
+    )
+    if (files.length === 0) return  // 이미지가 아니면 기본 동작 유지
+    e.preventDefault()
+    files.forEach((file) => handleImageFile(file))
+  }
+
+  const handleEditorDragOver = (e) => {
+    // 이미지 파일 드래그 중일 때만 기본 동작 방지
+    if (e.dataTransfer.types.includes('Files')) e.preventDefault()
+  }
+
+  // MDEditor 툴바에 추가할 이미지 업로드 커맨드
+  const imageUploadCommand = {
+    name: 'image-upload',
+    keyCommand: 'image-upload',
+    buttonProps: {
+      'aria-label': '이미지 업로드',
+      title: uploading ? '업로드 중...' : '이미지 업로드',
+      disabled: uploading,
+    },
+    icon: <ImageUploadIcon uploading={uploading} />,
+    execute: () => {
+      if (!uploading) fileInputRef.current?.click()
+    },
+  }
+
+  // ── 태그 입력 ──────────────────────────────────────────────
+
   const addTag = (raw) => {
     const name = raw.toLowerCase().replace(/,/g, '').trim()
     if (!name || tags.includes(name)) return
@@ -62,7 +151,6 @@ function ArticleEditPage() {
       addTag(tagInput)
       setTagInput('')
     } else if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
-      // 입력창이 비어 있을 때 Backspace → 마지막 태그 제거
       removeTag(tags[tags.length - 1])
     }
   }
@@ -74,7 +162,8 @@ function ArticleEditPage() {
     }
   }
 
-  // 저장 핸들러
+  // ── 저장 ──────────────────────────────────────────────────
+
   const handleSave = async () => {
     if (!title.trim())   { alert('제목을 입력해주세요.'); return }
     if (!content.trim()) { alert('내용을 입력해주세요.'); return }
@@ -87,6 +176,8 @@ function ArticleEditPage() {
         content:     content.trim(),
         category_id: parseInt(categoryId),
         tags,
+        // localStorage에서 닉네임 읽어 자동 포함
+        author_name: localStorage.getItem('wiki_nickname') || '익명',
       }
       const res = isNew
         ? await client.post('/api/articles', body)
@@ -181,13 +272,28 @@ function ArticleEditPage() {
         />
       </div>
 
-      {/* 마크다운 에디터 */}
-      <div data-color-mode="dark" className="mb-6">
+      {/* 숨겨진 파일 input — 툴바 버튼 클릭 시 트리거 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        className="hidden"
+        onChange={handleFileInputChange}
+      />
+
+      {/* 마크다운 에디터 + 드래그앤드롭 */}
+      <div
+        data-color-mode="dark"
+        className="mb-6"
+        onDrop={handleEditorDrop}
+        onDragOver={handleEditorDragOver}
+      >
         <MDEditor
           value={content}
           onChange={(val) => setContent(val ?? '')}
           height={450}
           preview="live"
+          extraCommands={[imageUploadCommand]}
         />
       </div>
 

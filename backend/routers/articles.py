@@ -121,10 +121,11 @@ def update_article(article_id: int, body: ArticleUpdate, db: Session = Depends(g
     if not category:
         raise HTTPException(status_code=400, detail="존재하지 않는 카테고리입니다")
 
-    article.title      = body.title
-    article.content    = body.content
+    article.title       = body.title
+    article.content     = body.content
     article.category_id = body.category_id
-    article.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    article.author_name = body.author_name
+    article.updated_at  = datetime.now(timezone.utc).replace(tzinfo=None)
 
     _sync_tags(db, article, body.tags)
     db.commit()

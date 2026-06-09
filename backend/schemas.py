@@ -45,6 +45,7 @@ class ArticleCreate(BaseModel):
     content: str
     category_id: int
     tags: list[str] = []
+    author_name: str = "익명"
 
 
 class ArticleUpdate(BaseModel):
@@ -52,6 +53,7 @@ class ArticleUpdate(BaseModel):
     content: str
     category_id: int
     tags: list[str] = []
+    author_name: str = "익명"
 
 
 class ArticleListItem(BaseModel):
@@ -62,6 +64,7 @@ class ArticleListItem(BaseModel):
     created_at: datetime
     updated_at: datetime
     view_count: int
+    author_name: str = "익명"
 
     model_config = {"from_attributes": True}
 
@@ -75,9 +78,22 @@ class ArticleDetail(BaseModel):
     created_at: datetime
     updated_at: datetime
     view_count: int
+    author_name: str = "익명"
     tags: list[TagBase] = []
 
     model_config = {"from_attributes": True}
+
+
+# ── Activity ──────────────────────────────────────────────
+
+class ActivityItem(BaseModel):
+    """최근 활동 피드 항목"""
+    id: int
+    title: str
+    author_name: str
+    category_name: str
+    action: str       # "작성" or "수정"
+    updated_at: datetime
 
 
 # ── 공통 메시지 ─────────────────────────────────────────────
