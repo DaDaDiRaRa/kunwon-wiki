@@ -84,14 +84,14 @@ function CategoryPage() {
       )}
 
       {/* 검색바 */}
-      <div className="max-w-2xl mb-8">
+      <div className="mb-8">
         <SearchBar onSearch={handleSearch} />
       </div>
 
       {/* 글 목록 */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
             <SkeletonCard key={i} />
           ))}
         </div>
@@ -105,7 +105,7 @@ function CategoryPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {articles.map((article) => (
             <ArticleCard
               key={article.id}

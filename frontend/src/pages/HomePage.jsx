@@ -93,13 +93,13 @@ function HomePage() {
       )}
 
       {/* 검색바 */}
-      <div className="max-w-2xl mb-6">
+      <div className="mb-6">
         <SearchBar onSearch={handleSearch} />
       </div>
 
       {/* 최근 활동 피드 */}
       {activities.length > 0 && (
-        <div className="max-w-2xl mb-8">
+        <div className="mb-8">
           {/* 섹션 헤더 */}
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-widest">
@@ -158,7 +158,7 @@ function HomePage() {
 
       {/* 글 목록 */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...Array(4)].map((_, i) => (
             <SkeletonCard key={i} />
           ))}
@@ -175,7 +175,7 @@ function HomePage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {articles.map((article) => (
             <ArticleCard
               key={article.id}
