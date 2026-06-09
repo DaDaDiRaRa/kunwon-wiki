@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import client from '../api/client'
 
+const BOOKMARKS_KEY = 'wiki_bookmarks'
+
+function loadBookmarks() {
+  try { return JSON.parse(localStorage.getItem(BOOKMARKS_KEY) || '[]') }
+  catch { return [] }
+}
+
 // 카테고리 이름에서 앞 이모지 제거 ("🚀 시작하기" → "시작하기")
 function stripEmoji(name) {
   const idx = name.indexOf(' ')
@@ -11,6 +18,7 @@ function stripEmoji(name) {
 function Sidebar({ nickname, onNicknameChange }) {
   const [categories, setCategories]       = useState([])
   const [popularTags, setPopularTags]     = useState([])
+  const [bookmarks, setBookmarks]         = useState(loadBookmarks)
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameInput, setNicknameInput] = useState('')
   const navigate = useNavigate()
@@ -28,6 +36,13 @@ function Sidebar({ nickname, onNicknameChange }) {
       .get('/api/tags')
       .then((res) => setPopularTags(res.data.slice(0, 10)))
       .catch((err) => console.error('태그 로딩 실패:', err))
+  }, [])
+
+  // ArticlePage에서 북마크 변경 시 CustomEvent를 받아 갱신
+  useEffect(() => {
+    const handler = () => setBookmarks(loadBookmarks())
+    window.addEventListener('bookmarks-changed', handler)
+    return () => window.removeEventListener('bookmarks-changed', handler)
   }, [])
 
   const currentCategoryId = location.pathname.startsWith('/category/')
@@ -113,6 +128,33 @@ function Sidebar({ nickname, onNicknameChange }) {
                 )
               })}
             </div>
+          </>
+        )}
+
+        {/* 즐겨찾기 섹션 */}
+        {bookmarks.length > 0 && (
+          <>
+            <p className="px-4 pt-4 pb-1 text-xs text-text-secondary uppercase tracking-widest">
+              즐겨찾기
+            </p>
+            {bookmarks.slice(0, 8).map((b) => {
+              const isActive = location.pathname === `/article/${b.id}`
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => navigate(`/article/${b.id}`)}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-xs transition-colors text-left
+                    border-l-2 pl-3.5
+                    ${isActive
+                      ? 'text-accent bg-bg-hover border-accent'
+                      : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary border-transparent'
+                    }`}
+                >
+                  <span className="flex-shrink-0 text-yellow-400">★</span>
+                  <span className="truncate">{b.title}</span>
+                </button>
+              )
+            })}
           </>
         )}
       </nav>

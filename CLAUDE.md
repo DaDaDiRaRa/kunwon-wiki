@@ -67,6 +67,7 @@ npm run build
 | `tags.py` | `GET /api/tags` — article_count 포함, 내림차순 정렬 |
 | `uploads.py` | `POST /api/uploads/image` — 10MB 제한, jpg/png/gif/webp, uuid4 prefix로 저장 |
 | `activities.py` | `GET /api/activities` — 최근 수정 글 20건, action: "작성"/"수정" 판별 |
+| `comments.py` | `GET /api/articles/{id}/comments`, `POST /api/articles/{id}/comments`, `DELETE /api/comments/{id}` |
 | `main.py` | `GET /api/health` |
 
 **태그 동기화 (`articles.py`)**: `_sync_tags(db, article, tag_names)` — 기존 ArticleTag 전체 삭제 후 재삽입. Tag가 없으면 새로 생성 후 `db.flush()`로 id 확보. `body.model_dump(exclude={"tags"})`로 태그를 Article 생성과 분리합니다.
@@ -111,13 +112,20 @@ proxy: {
 
 ---
 
+## 구현된 부가 기능
+
+| 기능 | 비고 |
+| --- | --- |
+| 목차(TOC) 자동 생성 | `ArticlePage` 우측 sticky 패널, 헤딩 2개 이상 + xl 화면에서만 표시 |
+| 페이지 템플릿 | 새 글 작성 시 7종 템플릿 선택 (SOP, AI도구, 프롬프트, 프로젝트, 기술문서, 회의록) |
+| 글 즐겨찾기/북마크 | localStorage 기반, `bookmarks-changed` CustomEvent로 Sidebar 실시간 반영 |
+| 댓글 | `Comment` 테이블, `GET/POST/DELETE` API, ArticlePage 하단 섹션 |
+
+**북마크 흐름**: `ArticlePage`에서 toggle → `saveBookmarks()` → `CustomEvent('bookmarks-changed')` dispatch → `Sidebar`의 이벤트 리스너가 수신 후 state 갱신.
+
 ## 향후 구현 예정 기능
 
 | 기능 | 난이도 |
 | --- | --- |
-| 글 댓글/토론 | ★★☆ |
 | 수정 이력 + 버전 복원 | ★★★ |
-| 글 즐겨찾기/북마크 | ★★☆ |
-| 페이지 템플릿 | ★☆☆ |
-| 목차(TOC) 자동 생성 | ★☆☆ |
 | 글 간 내부 링크 (`[[글제목]]`) | ★★☆ |

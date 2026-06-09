@@ -6,9 +6,9 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 from database import Base, engine, check_db_connection
-from models import Category, Tag, ArticleTag  # noqa: F401 — 테이블 등록용 import
-from models import Article                    # noqa: F401
-from routers import categories, articles, tags, uploads, activities
+from models import Category, Tag, ArticleTag, Comment  # noqa: F401 — 테이블 등록용 import
+from models import Article                             # noqa: F401
+from routers import categories, articles, tags, uploads, activities, comments
 from schemas import HealthResponse
 
 load_dotenv()
@@ -43,6 +43,7 @@ app.include_router(articles.router)
 app.include_router(tags.router)
 app.include_router(uploads.router)
 app.include_router(activities.router)
+app.include_router(comments.router)
 
 
 # ── 시작 이벤트 ────────────────────────────────────────────

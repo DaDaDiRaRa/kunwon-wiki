@@ -54,3 +54,16 @@ class Article(Base):
 
     category     = relationship("Category",   back_populates="articles")
     article_tags = relationship("ArticleTag", back_populates="article", cascade="all, delete-orphan")
+    comments     = relationship("Comment",    back_populates="article", cascade="all, delete-orphan")
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    article_id = Column(Integer, ForeignKey("articles.id", ondelete="CASCADE"), nullable=False)
+    author_name = Column(Text, default="익명", server_default="익명")
+    content    = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=utcnow)
+
+    article = relationship("Article", back_populates="comments")

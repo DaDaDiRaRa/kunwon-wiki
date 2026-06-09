@@ -3,12 +3,207 @@ import { useParams, useNavigate } from 'react-router-dom'
 import MDEditor from '@uiw/react-md-editor'
 import client from '../api/client'
 
+// ── 페이지 템플릿 정의 ─────────────────────────────────────────
+const TEMPLATES = [
+  {
+    id: 'blank',
+    name: '빈 문서',
+    icon: '📄',
+    content: '',
+  },
+  {
+    id: 'sop',
+    name: '업무 SOP',
+    icon: '📋',
+    content: `## 개요
+
+이 절차의 목적과 적용 범위를 간략히 설명하세요.
+
+## 사전 준비
+
+- [ ]
+- [ ]
+
+## 절차
+
+### 1단계:
+
+### 2단계:
+
+### 3단계:
+
+## 주의사항
+
+>
+
+## 관련 문서
+
+-
+`,
+  },
+  {
+    id: 'ai-tool',
+    name: 'AI 도구 가이드',
+    icon: '🛠',
+    content: `## 도구 소개
+
+| 항목 | 내용 |
+| --- | --- |
+| 도구명 |  |
+| 용도 |  |
+| 접속 방법 |  |
+| 요금제 |  |
+
+## 주요 기능
+
+## 사용법
+
+### 기본 사용
+
+### 활용 팁
+
+## 프롬프트 예시
+
+\`\`\`
+프롬프트를 여기에 작성하세요.
+\`\`\`
+
+## 한계 / 주의사항
+
+## 참고 링크
+
+-
+`,
+  },
+  {
+    id: 'prompt',
+    name: '프롬프트',
+    icon: '💬',
+    content: `## 용도
+
+이 프롬프트를 언제, 어떤 목적으로 사용하는지 설명하세요.
+
+## 프롬프트
+
+\`\`\`
+여기에 프롬프트를 작성하세요.
+\`\`\`
+
+## 변수 설명
+
+| 변수 | 설명 | 예시 |
+| --- | --- | --- |
+| {변수명} |  |  |
+
+## 출력 예시
+
+## 사용 팁
+
+`,
+  },
+  {
+    id: 'project',
+    name: '프로젝트 사례',
+    icon: '📁',
+    content: `## 프로젝트 개요
+
+| 항목 | 내용 |
+| --- | --- |
+| 프로젝트명 |  |
+| 발주처 |  |
+| 기간 |  |
+| 담당자 |  |
+
+## 배경 및 목적
+
+## 진행 과정
+
+### 주요 이슈
+
+### 해결 방법
+
+## 결과
+
+## 핵심 노하우
+
+> 다음 프로젝트에서 가장 활용하기 좋은 점:
+
+## 참고 자료
+
+`,
+  },
+  {
+    id: 'tech-doc',
+    name: '기술 문서',
+    icon: '🔧',
+    content: `## 개요
+
+## 환경 / 요구사항
+
+| 항목 | 버전/사양 |
+| --- | --- |
+|  |  |
+
+## 설치 및 설정
+
+\`\`\`bash
+# 명령어를 여기에 작성하세요
+\`\`\`
+
+## 주요 기능
+
+## 트러블슈팅
+
+| 증상 | 원인 | 해결 방법 |
+| --- | --- | --- |
+|  |  |  |
+
+## 변경 이력
+
+| 날짜 | 변경 내용 | 작성자 |
+| --- | --- | --- |
+|  |  |  |
+`,
+  },
+  {
+    id: 'meeting',
+    name: '회의록',
+    icon: '📝',
+    content: `## 회의 정보
+
+| 항목 | 내용 |
+| --- | --- |
+| 일시 |  |
+| 참석자 |  |
+| 장소/방식 |  |
+
+## 안건
+
+1.
+2.
+
+## 논의 내용
+
+### 안건 1
+
+### 안건 2
+
+## 결정 사항
+
+- [ ]
+- [ ]
+
+## 다음 회의
+
+`,
+  },
+]
+
 // 이미지 업로드 툴바 버튼 아이콘
 function ImageUploadIcon({ uploading }) {
   return (
     <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
       {uploading ? (
-        // 업로드 중 — 스피너 대신 점 세 개로 표현
         <text x="1" y="12" fontSize="10" fill="currentColor">···</text>
       ) : (
         <>
@@ -34,6 +229,8 @@ function ArticleEditPage() {
   const [saving, setSaving]         = useState(false)
   const [loading, setLoading]       = useState(!isNew)
   const [uploading, setUploading]   = useState(false)
+  // 새 글 작성 시에만 템플릿 선택 패널 표시
+  const [showTemplates, setShowTemplates] = useState(isNew)
 
   const fileInputRef = useRef(null)
 
@@ -212,6 +409,52 @@ function ArticleEditPage() {
       <h2 className="text-xl font-bold text-text-primary mb-6">
         {isNew ? '새 글 작성' : '글 편집'}
       </h2>
+
+      {/* 템플릿 선택 — 새 글 작성 시에만 표시 */}
+      {isNew && (
+        <div className="mb-4">
+          {showTemplates ? (
+            <div className="bg-bg-card border border-border-subtle rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-text-secondary uppercase tracking-widest">
+                  템플릿으로 시작하기
+                </span>
+                <button
+                  onClick={() => setShowTemplates(false)}
+                  className="text-xs text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  닫기 ✕
+                </button>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {TEMPLATES.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setContent(t.content)
+                      setShowTemplates(false)
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-bg-base border border-border-subtle
+                      rounded-lg text-xs text-text-secondary hover:border-accent hover:text-accent
+                      transition-colors"
+                  >
+                    <span>{t.icon}</span>
+                    <span>{t.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowTemplates(true)}
+              className="text-xs text-text-secondary border border-border-subtle rounded-lg
+                px-3 py-1.5 hover:bg-bg-hover hover:text-text-primary transition-colors"
+            >
+              템플릿 선택 ▼
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 제목 입력 */}
       <input
