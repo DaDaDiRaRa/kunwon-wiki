@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 전체 기본 스타일 */
+body {
+  font-family: 'Pretendard', sans-serif;
+  background-color: #0f1117;
+  color: #f0f0f0;
+  margin: 0;
+}
+
+/* 스크롤바 커스텀 (웹킷 기반) */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f1117;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2d3e;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8b8fa8;
+}
+
+/* @uiw/react-md-editor 다크 테마 보정 */
+.w-md-editor {
+  background-color: #1a1d27 !important;
+  border: 1px solid #2a2d3e !important;
+  border-radius: 8px !important;
+}
+.w-md-editor-text-pre,
+.w-md-editor-text-input,
+.w-md-editor-text {
+  color: #f0f0f0 !important;
+  font-family: 'Pretendard', monospace !important;
+}

@@ -1,0 +1,77 @@
+site_name: KUNWON AI Wiki
+site_description: 건원인터내셔널 건축부문 AI/LLM 워크플로우 지식 베이스
+site_author: KUNWON Architects — Design Division
+docs_dir: docs
+theme:
+  name: material
+  language: ko
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 다크 모드로 전환
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 라이트 모드로 전환
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+  icon:
+    logo: material/city-variant-outline
+  font:
+    text: Noto Sans KR
+    code: Roboto Mono
+
+plugins:
+  - search:
+      lang: ko
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - 홈: index.md
+  - 파이프라인:
+    - pipelines/index.md
+    - 외장 렌더링: pipelines/exterior-rendering.md
+    - 배치도 렌더링: pipelines/site-plan-render.md
+    - 아파트 2D → 3D: pipelines/apartment-2d-3d.md
+  - 프롬프트 라이브러리:
+    - prompt-library/index.md
+    - 승인된 태그: prompt-library/approved-tags.md
+    - 차단된 프롬프트: prompt-library/blocked-prompts.md
+  - 파라미터 레지스트리:
+    - parameter-registry/index.md
+    - 시드값: parameter-registry/seed-values.md
+    - ControlNet 설정: parameter-registry/controlnet-settings.md
+  - 오류 로그: error-log.md
+  - 온보딩 체크리스트: onboarding-checklist.md
+
+extra:
+  social:
+    - icon: fontawesome/solid/building
+      link: "#"
+      name: KUNWON Architects
