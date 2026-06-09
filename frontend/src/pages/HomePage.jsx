@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import SearchBar from '../components/SearchBar'
 import ArticleCard from '../components/ArticleCard'
 import client from '../api/client'
@@ -21,11 +22,14 @@ function HomePage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // URL ?tag= 파라미터로 태그 필터 상태 관리
+  const tagFilter = searchParams.get('tag') || ''
 
   // 카테고리 맵 (id → name) — ArticleCard에 이름 표시용
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
 
-  // 카테고리 목록 로딩 (한 번만)
   useEffect(() => {
     client
       .get('/api/categories')
@@ -33,31 +37,43 @@ function HomePage() {
       .catch((err) => console.error('카테고리 로딩 실패:', err))
   }, [])
 
-  // 글 목록 로딩 (검색어 변경 시마다)
-  const fetchArticles = useCallback(async (keyword) => {
-    setLoading(true)
-    try {
-      const params = {}
-      if (keyword) params.search = keyword
-      const res = await client.get('/api/articles', { params })
-      setArticles(res.data)
-    } catch (err) {
-      console.error('글 목록 로딩 실패:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
+  // 글 목록 로딩 — 검색어·태그 필터 변경 시마다
   useEffect(() => {
-    fetchArticles(search)
-  }, [search, fetchArticles])
+    setLoading(true)
+    const params = {}
+    if (search)    params.search = search
+    if (tagFilter) params.tag    = tagFilter
+    client
+      .get('/api/articles', { params })
+      .then((res) => setArticles(res.data))
+      .catch((err) => console.error('글 목록 로딩 실패:', err))
+      .finally(() => setLoading(false))
+  }, [search, tagFilter])
 
   const handleSearch = useCallback((keyword) => setSearch(keyword), [])
+
+  // 태그 필터 해제 — URL에서 tag 파라미터 제거
+  const clearTagFilter = () => setSearchParams({})
 
   return (
     <div className="p-8">
       {/* 헤더 */}
-      <h1 className="text-2xl font-bold text-text-primary mb-6">전체 글</h1>
+      {tagFilter ? (
+        <div className="flex items-center gap-3 mb-6">
+          <h1 className="text-2xl font-bold text-text-primary">
+            <span className="text-accent">#{tagFilter}</span> 태그의 글
+          </h1>
+          <button
+            onClick={clearTagFilter}
+            className="text-xs px-2.5 py-1 text-text-secondary border border-border-subtle
+              rounded-full hover:bg-bg-hover hover:text-text-primary transition-colors"
+          >
+            ✕ 필터 해제
+          </button>
+        </div>
+      ) : (
+        <h1 className="text-2xl font-bold text-text-primary mb-6">전체 글</h1>
+      )}
 
       {/* 검색바 */}
       <div className="max-w-2xl mb-8">
@@ -75,7 +91,9 @@ function HomePage() {
         <div className="text-center py-24 text-text-secondary">
           <p className="text-5xl mb-4">📭</p>
           <p className="text-base">
-            {search
+            {tagFilter
+              ? `#${tagFilter} 태그가 달린 글이 없습니다.`
+              : search
               ? `"${search}"에 대한 검색 결과가 없습니다.`
               : '아직 작성된 글이 없습니다. 첫 글을 작성해보세요!'}
           </p>

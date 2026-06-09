@@ -100,7 +100,7 @@ function ArticlePage() {
       </div>
 
       {/* 메타 정보 한 줄 */}
-      <div className="flex items-center gap-3 flex-wrap text-xs text-text-secondary mb-4">
+      <div className="flex items-center gap-3 flex-wrap text-xs text-text-secondary mb-3">
         {category && (
           <span className="border border-accent/50 text-accent px-2 py-0.5 rounded-full">
             {category.name}
@@ -110,6 +110,22 @@ function ArticlePage() {
         <span>수정: {formatDate(article.updated_at)}</span>
         <span>👁 {article.view_count}</span>
       </div>
+
+      {/* 태그 칩 — 클릭 시 해당 태그 글 목록으로 이동 */}
+      {article.tags && article.tags.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap mb-4">
+          {article.tags.map((tag) => (
+            <button
+              key={tag.id}
+              onClick={() => navigate(`/?tag=${tag.name}`)}
+              className="text-xs px-2.5 py-1 bg-accent/10 text-accent border border-accent/20
+                rounded-full hover:bg-accent/20 transition-colors"
+            >
+              #{tag.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 인라인 삭제 확인 UI (모달 아님) */}
       {deleteConfirm && (

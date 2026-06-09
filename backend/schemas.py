@@ -3,6 +3,21 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+# ── Tag ───────────────────────────────────────────────────
+
+class TagBase(BaseModel):
+    id: int
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class TagResponse(BaseModel):
+    id: int
+    name: str
+    article_count: int = 0
+    model_config = {"from_attributes": True}
+
+
 # ── Category ──────────────────────────────────────────────
 
 class CategoryCreate(BaseModel):
@@ -29,12 +44,14 @@ class ArticleCreate(BaseModel):
     title: str
     content: str
     category_id: int
+    tags: list[str] = []
 
 
 class ArticleUpdate(BaseModel):
     title: str
     content: str
     category_id: int
+    tags: list[str] = []
 
 
 class ArticleListItem(BaseModel):
@@ -50,7 +67,7 @@ class ArticleListItem(BaseModel):
 
 
 class ArticleDetail(BaseModel):
-    """상세 응답 — content 포함"""
+    """상세 응답 — content 및 태그 포함"""
     id: int
     title: str
     content: str
@@ -58,6 +75,7 @@ class ArticleDetail(BaseModel):
     created_at: datetime
     updated_at: datetime
     view_count: int
+    tags: list[TagBase] = []
 
     model_config = {"from_attributes": True}
 

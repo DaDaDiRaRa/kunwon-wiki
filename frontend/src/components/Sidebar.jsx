@@ -10,6 +10,7 @@ function stripEmoji(name) {
 
 function Sidebar() {
   const [categories, setCategories] = useState([])
+  const [popularTags, setPopularTags] = useState([])
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -21,10 +22,21 @@ function Sidebar() {
       .catch((err) => console.error('카테고리 로딩 실패:', err))
   }, [])
 
+  // 인기 태그 상위 10개 로딩
+  useEffect(() => {
+    client
+      .get('/api/tags')
+      .then((res) => setPopularTags(res.data.slice(0, 10)))
+      .catch((err) => console.error('태그 로딩 실패:', err))
+  }, [])
+
   // 현재 선택된 카테고리 id 추출
   const currentCategoryId = location.pathname.startsWith('/category/')
     ? parseInt(location.pathname.split('/')[2])
     : null
+
+  // 현재 활성화된 태그 필터 추출
+  const activeTag = new URLSearchParams(location.search).get('tag')
 
   return (
     <aside className="w-60 min-h-screen bg-bg-card border-r border-border-subtle flex flex-col fixed left-0 top-0 z-10">
@@ -38,7 +50,7 @@ function Sidebar() {
         </span>
       </div>
 
-      {/* 카테고리 목록 */}
+      {/* 카테고리 + 태그 목록 */}
       <nav className="flex-1 overflow-y-auto py-2">
         <p className="px-4 pt-3 pb-1 text-xs text-text-secondary uppercase tracking-widest">
           카테고리
@@ -73,6 +85,34 @@ function Sidebar() {
             </button>
           )
         })}
+
+        {/* 인기 태그 섹션 — 태그가 하나 이상 있을 때만 표시 */}
+        {popularTags.length > 0 && (
+          <>
+            <p className="px-4 pt-4 pb-2 text-xs text-text-secondary uppercase tracking-widest">
+              인기 태그
+            </p>
+            <div className="px-3 pb-3 flex flex-wrap gap-1.5">
+              {popularTags.map((tag) => {
+                const isActive = activeTag === tag.name
+                return (
+                  <button
+                    key={tag.id}
+                    onClick={() => navigate(`/?tag=${tag.name}`)}
+                    className={`text-xs px-2.5 py-1 rounded-full transition-colors
+                      ${
+                        isActive
+                          ? 'bg-accent text-white'
+                          : 'bg-bg-base text-text-secondary border border-border-subtle hover:bg-accent/20 hover:text-accent'
+                      }`}
+                  >
+                    #{tag.name}
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
       </nav>
 
       {/* 새 글 작성 버튼 (하단 고정) */}

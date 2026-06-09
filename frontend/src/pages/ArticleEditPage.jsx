@@ -6,14 +6,16 @@ import client from '../api/client'
 function ArticleEditPage() {
   const { id }   = useParams()
   const navigate = useNavigate()
-  const isNew    = !id  // /edit/new → id가 undefined
+  const isNew    = !id
 
-  const [title, setTitle]         = useState('')
-  const [content, setContent]     = useState('')
+  const [title, setTitle]           = useState('')
+  const [content, setContent]       = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [categories, setCategories] = useState([])
-  const [saving, setSaving]       = useState(false)
-  const [loading, setLoading]     = useState(!isNew)
+  const [tags, setTags]             = useState([])      // 확정된 태그 목록
+  const [tagInput, setTagInput]     = useState('')      // 입력 중인 태그 텍스트
+  const [saving, setSaving]         = useState(false)
+  const [loading, setLoading]       = useState(!isNew)
 
   // 카테고리 목록 로딩
   useEffect(() => {
@@ -21,7 +23,6 @@ function ArticleEditPage() {
       .get('/api/categories')
       .then((res) => {
         setCategories(res.data)
-        // 새 글 작성 모드: 첫 번째 카테고리를 기본 선택
         if (isNew && res.data.length > 0) {
           setCategoryId(String(res.data[0].id))
         }
@@ -39,17 +40,45 @@ function ArticleEditPage() {
           setTitle(res.data.title)
           setContent(res.data.content)
           setCategoryId(String(res.data.category_id))
+          setTags(res.data.tags ? res.data.tags.map((t) => t.name) : [])
         })
         .catch((err) => console.error('글 불러오기 실패:', err))
         .finally(() => setLoading(false))
     }
   }, [id, isNew])
 
+  // 태그 추가 (소문자 정규화 + 중복 제거)
+  const addTag = (raw) => {
+    const name = raw.toLowerCase().replace(/,/g, '').trim()
+    if (!name || tags.includes(name)) return
+    setTags((prev) => [...prev, name])
+  }
+
+  const removeTag = (name) => setTags((prev) => prev.filter((t) => t !== name))
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addTag(tagInput)
+      setTagInput('')
+    } else if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
+      // 입력창이 비어 있을 때 Backspace → 마지막 태그 제거
+      removeTag(tags[tags.length - 1])
+    }
+  }
+
+  const handleTagBlur = () => {
+    if (tagInput.trim()) {
+      addTag(tagInput)
+      setTagInput('')
+    }
+  }
+
   // 저장 핸들러
   const handleSave = async () => {
-    if (!title.trim())    { alert('제목을 입력해주세요.'); return }
-    if (!content.trim())  { alert('내용을 입력해주세요.'); return }
-    if (!categoryId)      { alert('카테고리를 선택해주세요.'); return }
+    if (!title.trim())   { alert('제목을 입력해주세요.'); return }
+    if (!content.trim()) { alert('내용을 입력해주세요.'); return }
+    if (!categoryId)     { alert('카테고리를 선택해주세요.'); return }
 
     setSaving(true)
     try {
@@ -57,6 +86,7 @@ function ArticleEditPage() {
         title:       title.trim(),
         content:     content.trim(),
         category_id: parseInt(categoryId),
+        tags,
       }
       const res = isNew
         ? await client.post('/api/articles', body)
@@ -75,7 +105,6 @@ function ArticleEditPage() {
     isNew ? navigate('/') : navigate(`/article/${id}`)
   }
 
-  // 편집 모드 로딩 중 스켈레톤
   if (loading) {
     return (
       <div className="p-8 max-w-4xl animate-pulse">
@@ -120,8 +149,39 @@ function ArticleEditPage() {
         ))}
       </select>
 
-      {/* 마크다운 에디터 — data-color-mode="dark"로 다크 테마 */}
-      {/* IME(한국어) 이슈 방지: onChange에서 value를 직접 setState */}
+      {/* 태그 입력 */}
+      <div
+        className="flex flex-wrap items-center gap-1.5 bg-bg-card border border-border-subtle
+          rounded-lg px-3 py-2 mb-4 focus-within:border-accent transition-colors min-h-[42px]"
+      >
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="flex items-center gap-1 bg-accent/20 text-accent text-xs px-2.5 py-1 rounded-full"
+          >
+            #{tag}
+            <button
+              type="button"
+              onClick={() => removeTag(tag)}
+              className="hover:text-white transition-colors leading-none ml-0.5"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          type="text"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={handleTagKeyDown}
+          onBlur={handleTagBlur}
+          placeholder={tags.length === 0 ? 'Enter 또는 쉼표로 태그 추가' : ''}
+          className="flex-1 min-w-[160px] bg-transparent text-text-primary text-sm
+            outline-none placeholder-text-secondary"
+        />
+      </div>
+
+      {/* 마크다운 에디터 */}
       <div data-color-mode="dark" className="mb-6">
         <MDEditor
           value={content}

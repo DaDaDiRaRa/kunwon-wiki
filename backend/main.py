@@ -4,9 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from database import Base, engine, check_db_connection
-from models import Category  # noqa: F401 — 테이블 등록용 import
-from models import Article   # noqa: F401
-from routers import categories, articles
+from models import Category, Tag, ArticleTag  # noqa: F401 — 테이블 등록용 import
+from models import Article                    # noqa: F401
+from routers import categories, articles, tags
 from schemas import HealthResponse
 
 load_dotenv()
@@ -31,6 +31,7 @@ app.add_middleware(
 # ── 라우터 등록 ────────────────────────────────────────────
 app.include_router(categories.router)
 app.include_router(articles.router)
+app.include_router(tags.router)
 
 
 # ── 시작 이벤트 ────────────────────────────────────────────

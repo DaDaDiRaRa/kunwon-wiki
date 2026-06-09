@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from dotenv import load_dotenv
 
@@ -17,6 +17,13 @@ engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False},  # SQLite 멀티스레드 허용
 )
+
+# SQLite는 기본적으로 외래 키 제약을 비활성화 — CASCADE DELETE 등이 동작하려면 명시 활성화 필요
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_conn, _):
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
