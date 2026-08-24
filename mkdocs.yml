@@ -71,6 +71,7 @@ nav:
     - mcp-tools/index.md
     - 건축법규 탐색기: mcp-tools/arch-law-graph.md
     - 대지모델 생성기: mcp-tools/arch-site-model.md
+    - 터읽기: mcp-tools/teoilgi.md
   - 오류 로그: error-log.md
   - 온보딩 체크리스트: onboarding-checklist.md
 
