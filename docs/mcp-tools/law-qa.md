@@ -52,13 +52,12 @@
 | `get_land_info` | 주소 → 용도지역·용도지구·용도구역 |
 | `compliance_report` | 건폐율·용적률·주차·높이·조경 5개 항목 종합 검토 |
 
-!!! warning "`get_land_info`·`compliance_report` 는 지금 용도지역 조회가 실패할 수 있습니다"
-    국토교통부 LURIS API 가 403 을 반환하는 상태입니다(2026-08-24 확인, 이 배포와 무관한
-    외부 API 쪽 문제로 보입니다 — 키 갱신 필요 여부 확인 중). `search_laws` 는 이 문제와
-    무관하게 정상입니다.
+!!! info "`get_land_info` 는 [건축 법규 자동 진단](arch-law-diagnose.md)을 단일 소스로 씁니다"
+    2026-08-24 확인됐던 LURIS API 403 문제(자체 구현이 국토교통부 LURIS 를 직접 호출하며
+    발생)는 2026-08-25 통합으로 해결됐습니다 — 이제 자체 지오코딩·LURIS 호출 없이
+    `arch-law-diagnose` 의 `/api/land_info` 를 그대로 호출합니다.
 
 ## 4. 문제가 있다면
 
 - `401 Unauthorized` → 키가 안 맞거나 환경변수가 비어 있음
-- `get_land_info` 가 "LURIS API 호출 실패" 를 반환 → 알려진 문제(위 참조), 김정현에게 확인 요청
 - 그래도 안 되면 김정현에게 문의
